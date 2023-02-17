@@ -81,7 +81,7 @@ float activate(float x, ACTIVATION a)
             return relie_activate(x);
         case RAMP:
             return ramp_activate(x);
-        case LEAKY:
+       case LEAKY:
             return leaky_activate(x);
         case TANH:
             return tanh_activate(x);
@@ -97,14 +97,68 @@ float activate(float x, ACTIVATION a)
     return 0;
 }
 
-void activate_array(float *x, const int n, const ACTIVATION a)
+/*void activate_array(float *x, const int n, const ACTIVATION a)
 {
     int i;
     for(i = 0; i < n; ++i){
         x[i] = activate(x[i], a);
     }
 }
+*/
 
+/* vectorized activate array*/
+void activate_array(float *x, const int n, const ACTIVATION a)
+{
+    int i;
+    long gvl;
+    float beta=0.1,ALPHA=0, ONE=1;
+   switch(a){
+        case LEAKY:
+               for(i = 0; i < n; )
+               {
+                gvl = __builtin_epi_vsetvl(((long)n - (long)i), __epi_e32, __epi_m1);
+                __epi_2xf32 XERO = __builtin_epi_vfmv_v_f_2xf32(ALPHA, gvl);
+                __epi_2xf32 BETA = __builtin_epi_vfmv_v_f_2xf32(beta, gvl);
+                __epi_2xf32 x_vec = __builtin_epi_vload_2xf32(&x[i+0], gvl);
+                __epi_2xi1 mask = __builtin_epi_vmflt_2xf32(x_vec, XERO, gvl);
+                x_vec =  __builtin_epi_vfmul_2xf32_mask(x_vec, x_vec,BETA, mask,gvl);
+                __builtin_epi_vstore_2xf32(&x[i+0], x_vec,   gvl);
+                //__builtin_epi_vstore_2xf32(&x[i+0], alpha,    gvl);
+                i += gvl;
+
+                }
+                break;
+        case LINEAR:
+               for(i = 0; i < n; )
+               {
+                gvl = __builtin_epi_vsetvl(((long)n - (long)i), __epi_e32, __epi_m1);
+                __epi_2xf32 x_vec = __builtin_epi_vload_2xf32(&x[i+0], gvl);
+                __builtin_epi_vstore_2xf32(&x[i+0], x_vec,   gvl);
+                i += gvl;
+
+                }
+                break;
+	case RELU:
+	        for(i=0;i<n;)
+		{
+                gvl = __builtin_epi_vsetvl(((long)n - (long)i), __epi_e32, __epi_m1);
+                __epi_2xf32 XERO = __builtin_epi_vfmv_v_f_2xf32(ALPHA, gvl);
+                __epi_2xf32 one = __builtin_epi_vfmv_v_f_2xf32(ONE, gvl);
+                __epi_2xf32 x_vec = __builtin_epi_vload_2xf32(&x[i+0], gvl);
+                __epi_2xi1 mask = __builtin_epi_vmflt_2xf32(x_vec, XERO, gvl);
+                x_vec =  __builtin_epi_vfmul_2xf32_mask(x_vec, x_vec,XERO, mask,gvl);
+                __builtin_epi_vstore_2xf32(&x[i+0], x_vec,   gvl);
+		i += gvl;
+		//x[i] = x[i]*(x[i]>0);
+		}
+		break;
+         default:
+               for(i = 0; i < n; ++i){
+                   x[i] = activate(x[i], a);
+                }
+                break;
+      }
+}
 float gradient(float x, ACTIVATION a)
 {
     switch(a){

@@ -4,6 +4,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <pthread.h>
+#define NNPACK 1
+#ifdef NNPACK
+#include <init.h>
+//#include <nnpack.h>
+#endif
 
 #ifdef GPU
     #define BLOCK 512
@@ -492,7 +497,9 @@ typedef struct network{
     float *delta_gpu;
     float *output_gpu;
 #endif
-
+#ifdef NNPACK
+    pthreadpool_t threadpool;
+#endif
 } network;
 
 typedef struct {

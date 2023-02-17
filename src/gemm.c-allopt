@@ -4,10 +4,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
-#define reg32 1    //set this value as 1 if using double buffer scheme
+#define reg32 0    //set this value as 1 if using double buffer scheme
 #define doublebuffer 0    //set this value as 1 if using double buffer scheme
-#define nodoublebuffer 0    //set this value as 1 if using double buffer scheme
-#define unroll24 0  //set this value as 1 if using unroll24
+#define nodoublebuffer 1   //set this value as 1 if using double buffer scheme
+#define unroll24 1  //set this value as 1 if using unroll24
 
 
 void gemm_bin(int M, int N, int K, float ALPHA, 
@@ -80,165 +80,17 @@ void gemm(int TA, int TB, int M, int N, int K, float ALPHA,
 /***********************3. loop interchange with manual vectorization with ALPHA!=1 double buffer ****************/
 /* Manual vectorization with loop interchange + loop unrolling with unroll degree 24*/
 
-void gemm_nn_unroll16(int ii, int jj, int kk, float *A, float *B, float *C, float ALPHA, int M, int N, int K,  int lda,int ldb,int ldc)
-{
-int i1=ii, j1=jj, k1=kk;
-  int i=0,j=0,k=0;
-  long gvl;
-  for ( j = 0; j < N; ) {
-      gvl = __builtin_epi_vsetvl(N-j, __epi_e32, __epi_m1);
-     for (i = 0; i < M-15; i += 16) {
-//	__builtin_prefetch(&C[(i+i1)*ldc+(j+j1)], 0, 3);
-     //           __builtin_prefetch(B, 0, 2);
-       //         __builtin_prefetch(A, 0, 2);
-        __epi_2xf32 vc, vc1, vc2, vc3, vc4, vc5, vc6, vc7, vc8, vc9, vc10, vc11, vc12, vc13, vc14, vc15,vc16,vc17,vc18,vc19,vc20,vc21,vc22,vc23;
-        vc= __builtin_epi_vload_2xf32(&C[(i+i1)*ldc+(j+j1)], gvl);
-        vc1= __builtin_epi_vload_2xf32(&C[(i+i1+1)*ldc+(j+j1)], gvl);
-        vc2= __builtin_epi_vload_2xf32(&C[(i+i1+2)*ldc+(j+j1)], gvl);
-        vc3= __builtin_epi_vload_2xf32(&C[(i+i1+3)*ldc+(j+j1)], gvl);
-        vc4= __builtin_epi_vload_2xf32(&C[(i+i1+4)*ldc+(j+j1)], gvl);
-        vc5= __builtin_epi_vload_2xf32(&C[(i+i1+5)*ldc+(j+j1)], gvl);
-        vc6= __builtin_epi_vload_2xf32(&C[(i+i1+6)*ldc+(j+j1)], gvl);
-        vc7= __builtin_epi_vload_2xf32(&C[(i+i1+7)*ldc+(j+j1)], gvl);
-        vc8= __builtin_epi_vload_2xf32(&C[(i+i1+8)*ldc+(j+j1)], gvl);
-        vc9= __builtin_epi_vload_2xf32(&C[(i+i1+9)*ldc+(j+j1)], gvl);
-        vc10= __builtin_epi_vload_2xf32(&C[(i+i1+10)*ldc+(j+j1)], gvl);
-        vc11= __builtin_epi_vload_2xf32(&C[(i+i1+11)*ldc+(j+j1)], gvl);
-        vc12= __builtin_epi_vload_2xf32(&C[(i+i1+12)*ldc+(j+j1)], gvl);
-        vc13= __builtin_epi_vload_2xf32(&C[(i+i1+13)*ldc+(j+j1)], gvl);
-        vc14= __builtin_epi_vload_2xf32(&C[(i+i1+14)*ldc+(j+j1)], gvl);
-        vc15= __builtin_epi_vload_2xf32(&C[(i+i1+15)*ldc+(j+j1)], gvl);
-        //
-//	__builtin_prefetch(B, 0, 3);
-  //              __builtin_prefetch(A, 0, 3);
-        for ( k = 0; k < K; k ++) {
-                //__epi_2xf32 vb = __builtin_epi_vload_2xf32(&B[k*ldb+j], gvl);
-		__epi_2xf32 vb = __builtin_epi_vload_2xf32( &B[((k+(K*(j/ldb)))*ldb)+0], gvl);
-               // register float alpha =  A[i+lda*k];
-               __epi_2xf32 vaalpha = __builtin_epi_vfmv_v_f_2xf32(A[i+lda*k], gvl); // ALPHA*A
-                  vc = __builtin_epi_vfmacc_2xf32(vc, vaalpha, vb, gvl); // sum += ALPHA*A*B
-                //register float alpha1 =  A[(i+1)+lda*k];
-               __epi_2xf32 vaalpha1 = __builtin_epi_vfmv_v_f_2xf32(A[(i+1)+lda*k], gvl); // ALPHA*A
-                  vc1 = __builtin_epi_vfmacc_2xf32(vc1, vaalpha1, vb, gvl); // sum += ALPHA*A*B
-                //register float alpha2 =  A[(i+2)+lda*k];
-               __epi_2xf32 vaalpha2 = __builtin_epi_vfmv_v_f_2xf32(A[(i+2)+lda*k], gvl); // ALPHA*A
-                  vc2 = __builtin_epi_vfmacc_2xf32(vc2, vaalpha2, vb, gvl); // sum += ALPHA*A*B
-                //register float alpha3 =  A[(i+3)+lda*k];
-               __epi_2xf32 vaalpha3 = __builtin_epi_vfmv_v_f_2xf32(A[(i+3)+lda*k], gvl); // ALPHA*A
-                  vc3 = __builtin_epi_vfmacc_2xf32(vc3, vaalpha3, vb, gvl); // sum += ALPHA*A*B
-               // register float alpha4 =  A[(i+4)+lda*k];
-               __epi_2xf32 vaalpha4 = __builtin_epi_vfmv_v_f_2xf32(A[(i+4)+lda*k], gvl); // ALPHA*A
-                  vc4 = __builtin_epi_vfmacc_2xf32(vc4, vaalpha4, vb, gvl); // sum += ALPHA*A*B
-               // register float alpha5 =  A[(i+5)+lda*k];
-               __epi_2xf32 vaalpha5 = __builtin_epi_vfmv_v_f_2xf32(A[(i+5)+lda*k], gvl); // ALPHA*A
-                  vc5 = __builtin_epi_vfmacc_2xf32(vc5, vaalpha5, vb, gvl); // sum += ALPHA*A*B
-               // register float alpha6 =  A[(i+6)+lda*k];
-               __epi_2xf32 vaalpha6 = __builtin_epi_vfmv_v_f_2xf32(A[(i+6)+lda*k], gvl); // ALPHA*A
-                  vc6= __builtin_epi_vfmacc_2xf32(vc6, vaalpha6, vb, gvl); // sum += ALPHA*A*B
-               // register float alpha7 =  A[(i+7)+lda*k];
-               __epi_2xf32 vaalpha7 = __builtin_epi_vfmv_v_f_2xf32(A[(i+7)+lda*k], gvl); // ALPHA*A
-                  vc7 = __builtin_epi_vfmacc_2xf32(vc7, vaalpha7, vb, gvl); // sum += ALPHA*A*B
-               // register float alpha8 =  A[(i+8)+lda*k];
-               __epi_2xf32 vaalpha8 = __builtin_epi_vfmv_v_f_2xf32(A[(i+8)+lda*k], gvl); // ALPHA*A
-                  vc8 = __builtin_epi_vfmacc_2xf32(vc8, vaalpha8, vb, gvl); // sum += ALPHA*A*B
-               // register float alpha9 =  A[(i+9)+lda*k];
-               __epi_2xf32 vaalpha9= __builtin_epi_vfmv_v_f_2xf32(A[(i+9)+lda*k], gvl); // ALPHA*A
-                  vc9 = __builtin_epi_vfmacc_2xf32(vc9, vaalpha9, vb, gvl); // sum += ALPHA*A*B
-               // register float alpha10 =  A[(i+10)+lda*k];
-               __epi_2xf32 vaalpha10 = __builtin_epi_vfmv_v_f_2xf32(A[(i+10)+lda*k], gvl); // ALPHA*A
-                  vc10 = __builtin_epi_vfmacc_2xf32(vc10, vaalpha10, vb, gvl); // sum += ALPHA*A*B
-               // register float alpha11 =  A[(i+11)+lda*k];
-               __epi_2xf32 vaalpha11 = __builtin_epi_vfmv_v_f_2xf32(A[(i+11)+lda*k], gvl); // ALPHA*A
-                  vc11 = __builtin_epi_vfmacc_2xf32(vc11, vaalpha11, vb, gvl); // sum += ALPHA*A*B
-               // register float alpha12 =  A[(i+12)+lda*k];
-               __epi_2xf32 vaalpha12 = __builtin_epi_vfmv_v_f_2xf32(A[(i+12)+lda*k], gvl); // ALPHA*A
-                  vc12 = __builtin_epi_vfmacc_2xf32(vc12, vaalpha12, vb, gvl); // sum += ALPHA*A*B
-               // register float alpha13 =  A[(i+13)+lda*k];
-               __epi_2xf32 vaalpha13 = __builtin_epi_vfmv_v_f_2xf32(A[(i+13)+lda*k], gvl); // ALPHA*A
-                  vc13 = __builtin_epi_vfmacc_2xf32(vc13, vaalpha13, vb, gvl); // sum += ALPHA*A*B
-               // register float alpha14 =  A[(i+14)+lda*k];
-               __epi_2xf32 vaalpha14 = __builtin_epi_vfmv_v_f_2xf32(A[(i+14)+lda*k], gvl); // ALPHA*A
-                  vc14 = __builtin_epi_vfmacc_2xf32(vc14, vaalpha14, vb, gvl); // sum += ALPHA*A*B
-               // register float alpha15 = A[(i+15)+lda*k];
-		__epi_2xf32 vaalpha15 = __builtin_epi_vfmv_v_f_2xf32(A[(i+15)+lda*k], gvl); // ALPHA*A
-                  vc15 = __builtin_epi_vfmacc_2xf32(vc15, vaalpha15, vb, gvl); // sum += ALPHA*A*B
-                  //-----
-        }
-                __builtin_epi_vstore_2xf32(&C[(i+i1)*ldc+(j+j1)], vc, gvl);
-                __builtin_epi_vstore_2xf32(&C[(i+i1+1)*ldc+(j+j1)], vc1, gvl);
-                __builtin_epi_vstore_2xf32(&C[(i+i1+2)*ldc+(j+j1)], vc2, gvl);
-                __builtin_epi_vstore_2xf32(&C[(i+i1+3)*ldc+(j+j1)], vc3, gvl);
-                __builtin_epi_vstore_2xf32(&C[(i+i1+4)*ldc+(j+j1)], vc4, gvl);
-                __builtin_epi_vstore_2xf32(&C[(i+i1+5)*ldc+(j+j1)], vc5, gvl);
-                __builtin_epi_vstore_2xf32(&C[(i+i1+6)*ldc+(j+j1)], vc6, gvl);
-                __builtin_epi_vstore_2xf32(&C[(i+i1+7)*ldc+(j+j1)], vc7, gvl);
-                __builtin_epi_vstore_2xf32(&C[(i+i1+8)*ldc+(j+j1)], vc8, gvl);
-                __builtin_epi_vstore_2xf32(&C[(i+i1+9)*ldc+(j+j1)], vc9, gvl);
-                __builtin_epi_vstore_2xf32(&C[(i+i1+10)*ldc+(j+j1)], vc10, gvl);
-                __builtin_epi_vstore_2xf32(&C[(i+i1+11)*ldc+(j+j1)], vc11, gvl);
-                __builtin_epi_vstore_2xf32(&C[(i+i1+12)*ldc+(j+j1)], vc12, gvl);
-  		 __builtin_epi_vstore_2xf32(&C[(i+i1+13)*ldc+(j+j1)], vc13, gvl);
-                __builtin_epi_vstore_2xf32(&C[(i+i1+14)*ldc+(j+j1)], vc14, gvl);
-                __builtin_epi_vstore_2xf32(&C[(i+i1+15)*ldc+(j+j1)], vc15, gvl);
-                //
-
-        }
-    j += gvl;
-     }
-
-  int i_left=i;
-  //itr=0;
-  for (int j = 0; j < N; ) {
-     __epi_2xf32  vaalpha, vaalpha1, vaalpha2, vaalpha3, vc, vc1, vc2, vc3,vb;
-     float alpha1, alpha2, alpha3, alpha;
-
-     unsigned long int gvl = __builtin_epi_vsetvl(N-j, __epi_e32, __epi_m1);
-     for (i=i_left; i < M; i += 4) {    // change according to unroll degree
-        vc= __builtin_epi_vload_2xf32(&C[(i+i1)*ldc+(j+j1)], gvl);
-       if (i+1 < M) { vc1= __builtin_epi_vload_2xf32(&C[(i+i1+1)*ldc+(j+j1)], gvl);}
-       if (i+2 < M) { vc2= __builtin_epi_vload_2xf32(&C[(i+i1+2)*ldc+(j+j1)], gvl);}
-       if (i+3 < M) {vc3= __builtin_epi_vload_2xf32(&C[(i+i1+3)*ldc+(j+j1)], gvl);}
-  for (int k = 0; k < K; k ++) {
-                alpha =  A[i+lda*k];
-                if (i+1 < M) {alpha1 = A[(i+1)+lda*k]; }
-                if (i+2 < M) { alpha2 =  A[(i+2)+lda*k];}
-                if (i+3 < M) { alpha3 =  A[(i+3)+lda*k];}
-                vaalpha = __builtin_epi_vfmv_v_f_2xf32(alpha, gvl); // ALPHA*A
-               if (i+1 < M) { vaalpha1 = __builtin_epi_vfmv_v_f_2xf32(alpha1, gvl);} // ALPHA*A
-               if (i+2 < M) { vaalpha2 = __builtin_epi_vfmv_v_f_2xf32(alpha2, gvl);} // ALPHA*A
-               if (i+3 < M) { vaalpha3 = __builtin_epi_vfmv_v_f_2xf32(alpha3, gvl);} // ALPHA*A
-                //vb = __builtin_epi_vload_2xf32(&B[k*ldb+j], gvl);
-                vb = __builtin_epi_vload_2xf32(&B[((k+(K*(j/ldb)))*ldb)+0], gvl);
-                  vc = __builtin_epi_vfmacc_2xf32(vc, vaalpha, vb, gvl); // sum += ALPHA*A*B
-                  if (i+1 < M) {vc1 = __builtin_epi_vfmacc_2xf32(vc1, vaalpha1, vb, gvl);} // sum += ALPHA*A*B
-                  if (i+2 < M) {vc2 = __builtin_epi_vfmacc_2xf32(vc2, vaalpha2, vb, gvl);} // sum += ALPHA*A*B
-                  if (i+3 < M) {vc3 = __builtin_epi_vfmacc_2xf32(vc3, vaalpha3, vb, gvl);}// sum += ALPHA*A*B
-        }
-          __builtin_epi_vstore_2xf32(&C[(i+i1)*ldc+(j+j1)], vc, gvl);
-          if (i+1 < M)      {__builtin_epi_vstore_2xf32(&C[(i+i1+1)*ldc+(j+j1)], vc1, gvl);}
-          if (i+2 < M)      {__builtin_epi_vstore_2xf32(&C[(i+i1+2)*ldc+(j+j1)], vc2, gvl);}
-          if (i+3 < M)      {__builtin_epi_vstore_2xf32(&C[(i+i1+3)*ldc+(j+j1)], vc3, gvl);}
-     }
-     j += gvl;
-  }
-}
-
-
-/***********************3. loop interchange with manual vectorization with ALPHA==1 double buffer ****************/
-/* Manual vectorization with loop interchange + loop unrolling with unroll degree 24*/
-void gemm_nn_noalpha_unroll163loops(int M, int N, int K, float ALPHA,
+void gemm_nn_unroll24(int M, int N, int K, float ALPHA,
         float *A, int lda,
         float *B, int ldb,
         float *C, int ldc)
 {
-	printf("3-loops");
   int i=0,j=0,k=0;
   long gvl;
-  if(M>15){
+  if(M>23){
   for ( j = 0; j < N; ) {
       gvl = __builtin_epi_vsetvl(N-j, __epi_e32, __epi_m1);
-     //for (i = 0; i < M-23; i += 24) {
-     for (i = 0; i < M-15; i += 16) {
+     for (i = 0; i < M-23; i += 24) {
         __epi_2xf32 vc, vc1, vc2, vc3, vc4, vc5, vc6, vc7, vc8, vc9, vc10, vc11, vc12, vc13, vc14, vc15,vc16,vc17,vc18,vc19,vc20,vc21,vc22,vc23;
         vc= __builtin_epi_vload_2xf32(&C[i*ldc+j], gvl);
         vc1= __builtin_epi_vload_2xf32(&C[(i+1)*ldc+j], gvl);
@@ -257,77 +109,100 @@ void gemm_nn_noalpha_unroll163loops(int M, int N, int K, float ALPHA,
         vc14= __builtin_epi_vload_2xf32(&C[(i+14)*ldc+j], gvl);
         vc15= __builtin_epi_vload_2xf32(&C[(i+15)*ldc+j], gvl);
         //
-   //    vc16= __builtin_epi_vload_2xf32(&C[(i+16)*ldc+j], gvl);
-   //     vc17= __builtin_epi_vload_2xf32(&C[(i+17)*ldc+j], gvl);
-   //     vc18= __builtin_epi_vload_2xf32(&C[(i+18)*ldc+j], gvl);
-   //     vc19= __builtin_epi_vload_2xf32(&C[(i+19)*ldc+j], gvl);
-   //     vc20= __builtin_epi_vload_2xf32(&C[(i+20)*ldc+j], gvl);
-   //     vc21= __builtin_epi_vload_2xf32(&C[(i+21)*ldc+j], gvl);
-   //     vc22= __builtin_epi_vload_2xf32(&C[(i+22)*ldc+j], gvl);
-   //     vc23= __builtin_epi_vload_2xf32(&C[(i+23)*ldc+j], gvl);
-	
+        vc16= __builtin_epi_vload_2xf32(&C[(i+16)*ldc+j], gvl);
+        vc17= __builtin_epi_vload_2xf32(&C[(i+17)*ldc+j], gvl);
+        vc18= __builtin_epi_vload_2xf32(&C[(i+18)*ldc+j], gvl);
+        vc19= __builtin_epi_vload_2xf32(&C[(i+19)*ldc+j], gvl);
+        vc20= __builtin_epi_vload_2xf32(&C[(i+20)*ldc+j], gvl);
+        vc21= __builtin_epi_vload_2xf32(&C[(i+21)*ldc+j], gvl);
+        vc22= __builtin_epi_vload_2xf32(&C[(i+22)*ldc+j], gvl);
+        vc23= __builtin_epi_vload_2xf32(&C[(i+23)*ldc+j], gvl);
+
         for ( k = 0; k < K; k ++) {
                 __epi_2xf32 vb = __builtin_epi_vload_2xf32(&B[k*ldb+j], gvl);
 
-               __epi_2xf32 vaalpha = __builtin_epi_vfmv_v_f_2xf32(A[i*lda+k], gvl); // ALPHA*A
+                register float alpha = ALPHA * A[i*lda+k];
+               __epi_2xf32 vaalpha = __builtin_epi_vfmv_v_f_2xf32(alpha, gvl); // ALPHA*A
                   vc = __builtin_epi_vfmacc_2xf32(vc, vaalpha, vb, gvl); // sum += ALPHA*A*B
-               __epi_2xf32 vaalpha1 = __builtin_epi_vfmv_v_f_2xf32(A[(i+1)*lda+k], gvl); // ALPHA*A
+                register float alpha1 = ALPHA * A[(i+1)*lda+k];
+               __epi_2xf32 vaalpha1 = __builtin_epi_vfmv_v_f_2xf32(alpha1, gvl); // ALPHA*A
                   vc1 = __builtin_epi_vfmacc_2xf32(vc1, vaalpha1, vb, gvl); // sum += ALPHA*A*B
-               __epi_2xf32 vaalpha2 = __builtin_epi_vfmv_v_f_2xf32(A[(i+2)*lda+k], gvl); // ALPHA*A
+                register float alpha2 = ALPHA * A[(i+2)*lda+k];
+               __epi_2xf32 vaalpha2 = __builtin_epi_vfmv_v_f_2xf32(alpha2, gvl); // ALPHA*A
                   vc2 = __builtin_epi_vfmacc_2xf32(vc2, vaalpha2, vb, gvl); // sum += ALPHA*A*B
-               __epi_2xf32 vaalpha3 = __builtin_epi_vfmv_v_f_2xf32(A[(i+3)*lda+k], gvl); // ALPHA*A
+                register float alpha3 = ALPHA * A[(i+3)*lda+k];
+               __epi_2xf32 vaalpha3 = __builtin_epi_vfmv_v_f_2xf32(alpha3, gvl); // ALPHA*A
                   vc3 = __builtin_epi_vfmacc_2xf32(vc3, vaalpha3, vb, gvl); // sum += ALPHA*A*B
-               __epi_2xf32 vaalpha4 = __builtin_epi_vfmv_v_f_2xf32(A[(i+4)*lda+k], gvl); // ALPHA*A
+                register float alpha4 = ALPHA * A[(i+4)*lda+k];
+               __epi_2xf32 vaalpha4 = __builtin_epi_vfmv_v_f_2xf32(alpha4, gvl); // ALPHA*A
                   vc4 = __builtin_epi_vfmacc_2xf32(vc4, vaalpha4, vb, gvl); // sum += ALPHA*A*B
-               __epi_2xf32 vaalpha5 = __builtin_epi_vfmv_v_f_2xf32(A[(i+5)*lda+k], gvl); // ALPHA*A
+                register float alpha5 = ALPHA * A[(i+5)*lda+k];
+               __epi_2xf32 vaalpha5 = __builtin_epi_vfmv_v_f_2xf32(alpha5, gvl); // ALPHA*A
                   vc5 = __builtin_epi_vfmacc_2xf32(vc5, vaalpha5, vb, gvl); // sum += ALPHA*A*B
-               __epi_2xf32 vaalpha6 = __builtin_epi_vfmv_v_f_2xf32(A[(i+6)*lda+k], gvl); // ALPHA*A
+                register float alpha6 = ALPHA * A[(i+6)*lda+k];
+               __epi_2xf32 vaalpha6 = __builtin_epi_vfmv_v_f_2xf32(alpha6, gvl); // ALPHA*A
                   vc6= __builtin_epi_vfmacc_2xf32(vc6, vaalpha6, vb, gvl); // sum += ALPHA*A*B
-               __epi_2xf32 vaalpha7 = __builtin_epi_vfmv_v_f_2xf32(A[(i+7)*lda+k], gvl); // ALPHA*A
+                register float alpha7 = ALPHA * A[(i+7)*lda+k];
+               __epi_2xf32 vaalpha7 = __builtin_epi_vfmv_v_f_2xf32(alpha7, gvl); // ALPHA*A
                   vc7 = __builtin_epi_vfmacc_2xf32(vc7, vaalpha7, vb, gvl); // sum += ALPHA*A*B
-               __epi_2xf32 vaalpha8 = __builtin_epi_vfmv_v_f_2xf32(A[(i+8)*lda+k], gvl); // ALPHA*A
+                register float alpha8 = ALPHA * A[(i+8)*lda+k];
+               __epi_2xf32 vaalpha8 = __builtin_epi_vfmv_v_f_2xf32(alpha8, gvl); // ALPHA*A
                   vc8 = __builtin_epi_vfmacc_2xf32(vc8, vaalpha8, vb, gvl); // sum += ALPHA*A*B
-               __epi_2xf32 vaalpha9= __builtin_epi_vfmv_v_f_2xf32(A[(i+9)*lda+k], gvl); // ALPHA*A
+                register float alpha9 = ALPHA * A[(i+9)*lda+k];
+               __epi_2xf32 vaalpha9= __builtin_epi_vfmv_v_f_2xf32(alpha9, gvl); // ALPHA*A
                   vc9 = __builtin_epi_vfmacc_2xf32(vc9, vaalpha9, vb, gvl); // sum += ALPHA*A*B
-               __epi_2xf32 vaalpha10 = __builtin_epi_vfmv_v_f_2xf32(A[(i+10)*lda+k], gvl); // ALPHA*A
+                register float alpha10 = ALPHA * A[(i+10)*lda+k];
+               __epi_2xf32 vaalpha10 = __builtin_epi_vfmv_v_f_2xf32(alpha10, gvl); // ALPHA*A
                   vc10 = __builtin_epi_vfmacc_2xf32(vc10, vaalpha10, vb, gvl); // sum += ALPHA*A*B
-               __epi_2xf32 vaalpha11 = __builtin_epi_vfmv_v_f_2xf32(A[(i+11)*lda+k], gvl); // ALPHA*A
+                register float alpha11 = ALPHA * A[(i+11)*lda+k];
+               __epi_2xf32 vaalpha11 = __builtin_epi_vfmv_v_f_2xf32(alpha11, gvl); // ALPHA*A
                   vc11 = __builtin_epi_vfmacc_2xf32(vc11, vaalpha11, vb, gvl); // sum += ALPHA*A*B
-               __epi_2xf32 vaalpha12 = __builtin_epi_vfmv_v_f_2xf32(A[(i+12)*lda+k], gvl); // ALPHA*A
+                register float alpha12 = ALPHA * A[(i+12)*lda+k];
+               __epi_2xf32 vaalpha12 = __builtin_epi_vfmv_v_f_2xf32(alpha12, gvl); // ALPHA*A
                   vc12 = __builtin_epi_vfmacc_2xf32(vc12, vaalpha12, vb, gvl); // sum += ALPHA*A*B
-               __epi_2xf32 vaalpha13 = __builtin_epi_vfmv_v_f_2xf32(A[(i+13)*lda+k], gvl); // ALPHA*A
+                register float alpha13 = ALPHA * A[(i+13)*lda+k];
+               __epi_2xf32 vaalpha13 = __builtin_epi_vfmv_v_f_2xf32(alpha13, gvl); // ALPHA*A
                   vc13 = __builtin_epi_vfmacc_2xf32(vc13, vaalpha13, vb, gvl); // sum += ALPHA*A*B
-               __epi_2xf32 vaalpha14 = __builtin_epi_vfmv_v_f_2xf32(A[(i+14)*lda+k], gvl); // ALPHA*A
+                register float alpha14 = ALPHA * A[(i+14)*lda+k];
+               __epi_2xf32 vaalpha14 = __builtin_epi_vfmv_v_f_2xf32(alpha14, gvl); // ALPHA*A
                   vc14 = __builtin_epi_vfmacc_2xf32(vc14, vaalpha14, vb, gvl); // sum += ALPHA*A*B
-		__epi_2xf32 vaalpha15 = __builtin_epi_vfmv_v_f_2xf32(A[(i+15)*lda+k], gvl); // ALPHA*A
+                register float alpha15 = ALPHA * A[(i+15)*lda+k];
+		__epi_2xf32 vaalpha15 = __builtin_epi_vfmv_v_f_2xf32(alpha15, gvl); // ALPHA*A
                   vc15 = __builtin_epi_vfmacc_2xf32(vc15, vaalpha15, vb, gvl); // sum += ALPHA*A*B
                   //-----
-//               __epi_2xf32 vaalpha16 = __builtin_epi_vfmv_v_f_2xf32(A[(i+16)*lda+k], gvl); // ALPHA*A
-  //                vc16 = __builtin_epi_vfmacc_2xf32(vc16, vaalpha16, vb, gvl); // sum += ALPHA*A*B
-//
-  ////             __epi_2xf32 vaalpha17 = __builtin_epi_vfmv_v_f_2xf32(A[(i+17)*lda+k], gvl); // ALPHA*A
-      //            vc17 = __builtin_epi_vfmacc_2xf32(vc17, vaalpha17, vb, gvl); // sum += ALPHA*A*B
+                register float alpha16 = ALPHA * A[(i+16)*lda+k];
+               __epi_2xf32 vaalpha16 = __builtin_epi_vfmv_v_f_2xf32(alpha16, gvl); // ALPHA*A
+                  vc16 = __builtin_epi_vfmacc_2xf32(vc16, vaalpha16, vb, gvl); // sum += ALPHA*A*B
+
+              register float alpha17 = ALPHA * A[(i+17)*lda+k];
+               __epi_2xf32 vaalpha17 = __builtin_epi_vfmv_v_f_2xf32(alpha17, gvl); // ALPHA*A
+                  vc17 = __builtin_epi_vfmacc_2xf32(vc17, vaalpha17, vb, gvl); // sum += ALPHA*A*B
 
 
-        //       __epi_2xf32 vaalpha18 = __builtin_epi_vfmv_v_f_2xf32(A[(i+18)*lda+k], gvl); // ALPHA*A
-          //        vc18 = __builtin_epi_vfmacc_2xf32(vc18, vaalpha18, vb, gvl); // sum += ALPHA*A*B
+                register float alpha18 = ALPHA * A[(i+18)*lda+k];
+               __epi_2xf32 vaalpha18 = __builtin_epi_vfmv_v_f_2xf32(alpha18, gvl); // ALPHA*A
+                  vc18 = __builtin_epi_vfmacc_2xf32(vc18, vaalpha18, vb, gvl); // sum += ALPHA*A*B
 
-       //        __epi_2xf32 vaalpha19 = __builtin_epi_vfmv_v_f_2xf32(A[(i+19)*lda+k], gvl); // ALPHA*A
-       //           vc19 = __builtin_epi_vfmacc_2xf32(vc19, vaalpha19, vb, gvl); // sum += ALPHA*A*B
+                register float alpha19 = ALPHA * A[(i+19)*lda+k];
+               __epi_2xf32 vaalpha19 = __builtin_epi_vfmv_v_f_2xf32(alpha19, gvl); // ALPHA*A
+                  vc19 = __builtin_epi_vfmacc_2xf32(vc19, vaalpha19, vb, gvl); // sum += ALPHA*A*B
 
-       //        __epi_2xf32 vaalpha20 = __builtin_epi_vfmv_v_f_2xf32(A[(i+20)*lda+k], gvl); // ALPHA*A
-       //           vc20 = __builtin_epi_vfmacc_2xf32(vc20, vaalpha20, vb, gvl); // sum += ALPHA*A*B
+                register float alpha20 = ALPHA * A[(i+20)*lda+k];
+               __epi_2xf32 vaalpha20 = __builtin_epi_vfmv_v_f_2xf32(alpha20, gvl); // ALPHA*A
+                  vc20 = __builtin_epi_vfmacc_2xf32(vc20, vaalpha20, vb, gvl); // sum += ALPHA*A*B
 
-        //       __epi_2xf32 vaalpha21 = __builtin_epi_vfmv_v_f_2xf32(A[(i+21)*lda+k], gvl); // ALPHA*A
-        //          vc21 = __builtin_epi_vfmacc_2xf32(vc21, vaalpha21, vb, gvl); // sum += ALPHA*A*B
+              register float alpha21 = ALPHA * A[(i+21)*lda+k];
+               __epi_2xf32 vaalpha21 = __builtin_epi_vfmv_v_f_2xf32(alpha21, gvl); // ALPHA*A
+                  vc21 = __builtin_epi_vfmacc_2xf32(vc21, vaalpha21, vb, gvl); // sum += ALPHA*A*B
 
-         //      __epi_2xf32 vaalpha22 = __builtin_epi_vfmv_v_f_2xf32(A[(i+22)*lda+k], gvl); // ALPHA*A
-         //         vc22 = __builtin_epi_vfmacc_2xf32(vc22, vaalpha22, vb, gvl); // sum += ALPHA*A*B
+                register float alpha22 = ALPHA * A[(i+22)*lda+k];
+               __epi_2xf32 vaalpha22 = __builtin_epi_vfmv_v_f_2xf32(alpha22, gvl); // ALPHA*A
+                  vc22 = __builtin_epi_vfmacc_2xf32(vc22, vaalpha22, vb, gvl); // sum += ALPHA*A*B
 
-          //     __epi_2xf32 vaalpha23 = __builtin_epi_vfmv_v_f_2xf32( A[(i+23)*lda+k], gvl); // ALPHA*A
-          //        vc23 = __builtin_epi_vfmacc_2xf32(vc23, vaalpha23, vb, gvl); // sum += ALPHA*A*B
-        
-	}
+               register float alpha23 = ALPHA * A[(i+23)*lda+k];
+               __epi_2xf32 vaalpha23 = __builtin_epi_vfmv_v_f_2xf32( alpha23, gvl); // ALPHA*A
+                  vc23 = __builtin_epi_vfmacc_2xf32(vc23, vaalpha23, vb, gvl); // sum += ALPHA*A*B
+        }
                 __builtin_epi_vstore_2xf32(&C[i*ldc+j], vc, gvl);
                 __builtin_epi_vstore_2xf32(&C[(i+1)*ldc+j], vc1, gvl);
                 __builtin_epi_vstore_2xf32(&C[(i+2)*ldc+j], vc2, gvl);
@@ -345,15 +220,15 @@ void gemm_nn_noalpha_unroll163loops(int M, int N, int K, float ALPHA,
                 __builtin_epi_vstore_2xf32(&C[(i+14)*ldc+j], vc14, gvl);
                 __builtin_epi_vstore_2xf32(&C[(i+15)*ldc+j], vc15, gvl);
                 //
-             //   __builtin_epi_vstore_2xf32(&C[(i+16)*ldc+j], vc16, gvl);
-             //   __builtin_epi_vstore_2xf32(&C[(i+17)*ldc+j], vc17, gvl);
-             //   __builtin_epi_vstore_2xf32(&C[(i+18)*ldc+j], vc18, gvl);
-            //    __builtin_epi_vstore_2xf32(&C[(i+19)*ldc+j], vc19, gvl);
-            //    __builtin_epi_vstore_2xf32(&C[(i+20)*ldc+j], vc20, gvl);
-            //    __builtin_epi_vstore_2xf32(&C[(i+21)*ldc+j], vc21, gvl);
-            //    __builtin_epi_vstore_2xf32(&C[(i+22)*ldc+j], vc22, gvl);
-            //    __builtin_epi_vstore_2xf32(&C[(i+23)*ldc+j], vc23, gvl);
-	
+                __builtin_epi_vstore_2xf32(&C[(i+16)*ldc+j], vc16, gvl);
+                __builtin_epi_vstore_2xf32(&C[(i+17)*ldc+j], vc17, gvl);
+                __builtin_epi_vstore_2xf32(&C[(i+18)*ldc+j], vc18, gvl);
+                __builtin_epi_vstore_2xf32(&C[(i+19)*ldc+j], vc19, gvl);
+                __builtin_epi_vstore_2xf32(&C[(i+20)*ldc+j], vc20, gvl);
+                __builtin_epi_vstore_2xf32(&C[(i+21)*ldc+j], vc21, gvl);
+                __builtin_epi_vstore_2xf32(&C[(i+22)*ldc+j], vc22, gvl);
+                __builtin_epi_vstore_2xf32(&C[(i+23)*ldc+j], vc23, gvl);
+
 
         }
     j += gvl;
@@ -371,10 +246,14 @@ void gemm_nn_noalpha_unroll163loops(int M, int N, int K, float ALPHA,
        if (i+2 < M) { vc2= __builtin_epi_vload_2xf32(&C[(i+2)*ldc+j], gvl);}
        if (i+3 < M) {vc3= __builtin_epi_vload_2xf32(&C[(i+3)*ldc+j], gvl);}
   for (int k = 0; k < K; k ++) {
-                vaalpha = __builtin_epi_vfmv_v_f_2xf32(A[i*lda+k], gvl); // ALPHA*A
-               if (i+1 < M) { vaalpha1 = __builtin_epi_vfmv_v_f_2xf32(A[(i+1)*lda+k], gvl);} // ALPHA*A
-               if (i+2 < M) { vaalpha2 = __builtin_epi_vfmv_v_f_2xf32(A[(i+2)*lda+k], gvl);} // ALPHA*A
-               if (i+3 < M) { vaalpha3 = __builtin_epi_vfmv_v_f_2xf32(A[(i+3)*lda+k], gvl);} // ALPHA*A
+                alpha = ALPHA * A[i*lda+k];
+                if (i+1 < M) {alpha1 = ALPHA * A[(i+1)*lda+k]; }
+                if (i+2 < M) { alpha2 = ALPHA * A[(i+2)*lda+k];}
+                if (i+3 < M) { alpha3 = ALPHA * A[(i+3)*lda+k];}
+                vaalpha = __builtin_epi_vfmv_v_f_2xf32(alpha, gvl); // ALPHA*A
+               if (i+1 < M) { vaalpha1 = __builtin_epi_vfmv_v_f_2xf32(alpha1, gvl);} // ALPHA*A
+               if (i+2 < M) { vaalpha2 = __builtin_epi_vfmv_v_f_2xf32(alpha2, gvl);} // ALPHA*A
+               if (i+3 < M) { vaalpha3 = __builtin_epi_vfmv_v_f_2xf32(alpha3, gvl);} // ALPHA*A
                 vb = __builtin_epi_vload_2xf32(&B[k*ldb+j], gvl);
                   vc = __builtin_epi_vfmacc_2xf32(vc, vaalpha, vb, gvl); // sum += ALPHA*A*B
                   if (i+1 < M) {vc1 = __builtin_epi_vfmacc_2xf32(vc1, vaalpha1, vb, gvl);} // sum += ALPHA*A*B
@@ -390,9 +269,12 @@ void gemm_nn_noalpha_unroll163loops(int M, int N, int K, float ALPHA,
   }
 }
 
+
+
+
 /***********************3. loop interchange with manual vectorization with ALPHA==1 double buffer ****************/
 /* Manual vectorization with loop interchange + loop unrolling with unroll degree 24*/
-/*void gemm_nn_noalpha_unroll24(int M, int N, int K, float ALPHA,
+void gemm_nn_noalpha_unroll24(int M, int N, int K, float ALPHA,
         float *A, int lda,
         float *B, int ldb,
         float *C, int ldc)
@@ -552,7 +434,7 @@ __epi_2xf32 vaalpha15 = __builtin_epi_vfmv_v_f_2xf32(A[(i+15)*lda+k], gvl); // A
      }
      j += gvl;
   }
-}*/
+}
 
 
 /***** Manual vectorization with 16 unroll + 8 unroll + double buffer = 32 vector register usage*///
@@ -3709,76 +3591,6 @@ void gemm_tt(int M, int N, int K, float ALPHA,
 
 
 
-//6-loops with packA and PackB
-void gemm_nn_pack2(int M, int N, int K, float ALPHA,
-        float *A, int lda,
-        float *B, int ldb,
-        float *C,  int ldc, int BlockM, int BlockN, int BlockK, float *transposeB, float *transposeA)
-
-{        int ii,jj,kk,i,j,k;
-	int ld = __builtin_epi_vsetvlmax(__epi_e32, __epi_m1);//16;
-	//128;
-	//512;//__builtin_epi_vsetvlmax(__epi_e32, __epi_m1);
-	printf("ld my val = %d", ld);
-	long gvl;
-	for (jj = 0; jj < N; jj+=BlockN) {
-        	int Nc = ((jj+BlockN>N)?(N-jj):(BlockN));
-        	for (kk = 0; kk < K; kk+=BlockK) {
-                	int Kc = ((kk+BlockK > K)?(K-kk):(BlockK));
-                	int itr=0;
-                	for(int j=0;j<Nc;)
-                	{
-				gvl=__builtin_epi_vsetvl(Nc-j, __epi_e32, __epi_m1);
-                       		for(int k=0;k<Kc;k++)
-                        	{
-                        	//      transposeB[k*Kc+j] = B[(k+kk)*ldb+(j+jj)];
-                                	__epi_2xf32 tmp = __builtin_epi_vload_2xf32( &B[(k+kk)*ldb+(j+jj)], gvl);
-                                	//svst1(pg, &transposeB[((k+(Kc*itr))*ld)+0], tmp);
-                                	__builtin_epi_vstore_2xf32( &transposeB[((k+(Kc*(j/ld)))*ld)+0], tmp, gvl);
-                                	//transposeB[k*Nc+j] = B[(k+kk)*ldb+(j+jj)];
-                        	}
-                       	 	itr++;
-				j+=gvl;
-                	}
-                	for (ii = 0; ii < M; ii+=BlockM) {
-                        	int Mc = ((ii+BlockM >M)?(M-ii):(BlockM)) ;
-
-				//	gvl=__builtin_epi_vsetvl(Kc-k, __epi_e32, __epi_m1);
-                                	int itr1=0;
-                                	for(int i=0;i<Mc;i++)
-                                	{
-                        	for(int k=0;k<Kc;k++)
-                        	{
-                                  //      	__epi_2xf32 tmp = __builtin_epi_vload_2xf32(&A[(i+ii)*lda+(k+kk)], gvl);
-                                    //    	__builtin_epi_vstore_strided_2xf32(&transposeA[k*Mc+i], tmp, Mc*4, gvl);
-                                        	transposeA[k*Mc+i] = A[(i+ii)*lda+(k+kk)];
-                                	}
-			//		k+=gvl;
-                        	}
-
-                       	gemm_nn_unroll16(ii,jj,kk,transposeA,transposeB, C,ALPHA, Mc,Nc, Kc, Mc,ld,ldc );
-                	}
-                }
-	}
-}
-
-
-void gemm_nn_original(int M, int N, int K, float ALPHA,
-        float *A, int lda,
-        float *B, int ldb,
-        float *C, int ldc)
-{
-    int i,j,k;
-//    #pragma omp parallel for
-    for(i = 0; i < M; ++i){
-        for(k = 0; k < K; ++k){
-            register float A_PART = ALPHA*A[i*lda+k];
-            for(j = 0; j < N; ++j){
-                C[i*ldc+j] += A_PART*B[k*ldb+j];
-            }
-        }
-    }
-}
 
 void gemm_cpu(int TA, int TB, int M, int N, int K, float ALPHA, 
         float *A, int lda, 
@@ -3795,44 +3607,48 @@ void gemm_cpu(int TA, int TB, int M, int N, int K, float ALPHA,
     }
     if(!TA && !TB)
     {
+	if(unroll24 !=0)
+	{
+		if(ALPHA !=1 ){
+		 gemm_nn_unroll24(M, N, K, ALPHA,A,lda, B, ldb,C,ldc);
+			printf("I m in gemm_unroll24");
+		}
+		else
+		{
+		 gemm_nn_noalpha_unroll24(M, N, K, ALPHA,A,lda, B, ldb,C,ldc);
+			printf("I m in gemm_nnoalphaunroll24");
+		}
+	}
+	else if(reg32!=0)
+	{
+		gemm_nn_noalpha_doublebuffwith32reg(M, N, K, ALPHA,A,lda, B, ldb,C,ldc);
+		printf("I am in gemm_nn_noalpha_doublebufferreg2");
 
-/*	float *transposeB, *transposeA;
-        int blockM = ((16 >M)?M:(16)) ;
-        //int blockM = ((32 >M)?M:(32)) ;
-       // int blockM = ((64 >M)?M:(64)) ;
-       // int blockM = ((256 >M)?M:(256)) ;
-        int blockN  =((512>N)?N:(512));
-        //int blockN  =((1024>N)?N:(1024));
-     //   int blockN  =((2048>N)?N:(2048));
-       //int blockN = ((4096>K)?K:(4096));
-        int blockK = ((128>K)?K:(128));
-        //int blockK = ((1024>K)?K:(1024));
-        transposeB= (float *)malloc(blockM*blockN*blockK*sizeof(float));
-        transposeA= (float *)malloc(blockM*blockN*blockK*sizeof(float));
-
-        if (transposeB == NULL) {
-       	 	fprintf(stderr, "Fatal: failed to allocate bytes.\n");
-        	exit(0);
-        }
-        if(transposeA == NULL) {
-        	fprintf(stderr, "Fatal: failed to allocate  bytes.\n");
-       		exit(0);
-        }
-	//gemm_nn_original(M,N,K,ALPHA,A, lda,B, ldb, C, ldc);	
-	gemm_nn_pack2(M, N, K, ALPHA,A, lda, B, ldb,C, ldc, blockM, blockN, blockK, transposeB, transposeA);
-	if(transposeB != NULL)
-        {
-                free(transposeB);
-                transposeB = NULL;
-        }
-        if(transposeA != NULL)
-        {
-                free(transposeA);
-                transposeA = NULL;
-        }
-*/
-	gemm_nn_noalpha_unroll163loops(M, N, K, ALPHA,A,lda, B, ldb,C,ldc);
-	
+	}
+	else
+	{
+	if(doublebuffer==0)
+	{
+		if(ALPHA !=1 ){
+        		gemm_nn(M, N, K, ALPHA,A,lda, B, ldb,C,ldc);
+			printf("I m in gemm_n nn");
+			}
+		else{
+			gemm_nn_noalpha(M, N, K, ALPHA,A,lda, B, ldb,C,ldc);
+			printf("I m in gemm_nn noalpha");
+			}
+	}
+	else
+	{
+		if(ALPHA !=1 ){
+        		gemm_nn_doublebuff(M, N, K, ALPHA,A,lda, B, ldb,C,ldc);  // gemm_nn with double buffer
+			printf("I m in gemm_n doublebuffer");
+			}
+		else{
+			gemm_nn_noalpha_doublebuff(M, N, K, ALPHA,A,lda, B, ldb,C,ldc); // gemm_nn with double buffer
+			printf("I m in gemm_n no alpha double buffer");
+			}
+	}}
     }
     else if(TA && !TB)
         gemm_tn(M, N, K, ALPHA,A,lda, B, ldb,C,ldc);

@@ -91,6 +91,8 @@ void shortcut_cpu(int batch, int w1, int h1, int c1, float *add, int w2, int h2,
     }
 }
 
+
+
 void mean_cpu(float *x, int batch, int filters, int spatial, float *mean)
 {
     float scale = 1./(batch * spatial);
@@ -143,26 +145,56 @@ void l2normalize_cpu(float *x, float *dx, int batch, int filters, int spatial)
     }
 }
 
-
+/*
 void normalize_cpu(float *x, float *mean, float *variance, int batch, int filters, int spatial)
 {
     int b, f, i;
+    int tmp1 = filters*spatial;
     for(b = 0; b < batch; ++b){
+	    int tmp2 = tmp1*b;
         for(f = 0; f < filters; ++f){
+		int tmp3 = tmp2 + f*spatial;
             for(i = 0; i < spatial; ++i){
-                int index = b*filters*spatial + f*spatial + i;
+                int index = tmp3 + i;
                 x[index] = (x[index] - mean[f])/(sqrt(variance[f]) + .000001f);
             }
         }
     }
-}
+}*/
 
+/* vectorized normalize CPU*/
+void normalize_cpu(float *x, float *mean, float *variance, int batch, int filters, int spatial)
+{
+    int b, f, i;
+    long gvl;
+    int tmp1 = filters*spatial;
+    for(b = 0; b < batch; ++b){
+	    int tmp2 = tmp1*b;
+        for(f = 0; f < filters; ++f){
+		int tmp3 = tmp2 + f*spatial;
+		float var =sqrt(variance[f]) + .000001f;
+            for(i = 0; i < spatial; ){
+                gvl = __builtin_epi_vsetvl(((long)spatial - (long)i), __epi_e32, __epi_m1);
+               __epi_2xf32 x_vec=__builtin_epi_vload_2xf32(&x[tmp3+i],gvl);
+                __epi_2xf32 mean_vec = __builtin_epi_vfmv_v_f_2xf32(mean[f], gvl); //broadcast
+                __epi_2xf32 var_vec = __builtin_epi_vfmv_v_f_2xf32(var, gvl); //broadcast
+                __epi_2xf32 intermediate1_vec  = __builtin_epi_vfsub_2xf32(x_vec, mean_vec, gvl);
+                x_vec = __builtin_epi_vfdiv_2xf32(intermediate1_vec,var_vec, gvl);
+                __builtin_epi_vstore_2xf32(&x[tmp3+i], x_vec, gvl);
+		i+=gvl;
+		 //   int index = tmp3 + i;
+                //x[index] = (x[index] - mean[f])/(sqrt(variance[f]) + .000001f);
+            }
+        }
+    }
+}
+//auto-vectorized
 void const_cpu(int N, float ALPHA, float *X, int INCX)
 {
     int i;
     for(i = 0; i < N; ++i) X[i*INCX] = ALPHA;
 }
-
+//auto-vectorized - vsetvli, load, multiplication, store
 void mul_cpu(int N, float *X, int INCX, float *Y, int INCY)
 {
     int i;
@@ -174,23 +206,24 @@ void pow_cpu(int N, float ALPHA, float *X, int INCX, float *Y, int INCY)
     int i;
     for(i = 0; i < N; ++i) Y[i*INCY] = pow(X[i*INCX], ALPHA);
 }
-
+//autovectorized bradcast, load, multiplication, addition, , store
 void axpy_cpu(int N, float ALPHA, float *X, int INCX, float *Y, int INCY)
 {
     int i;
     for(i = 0; i < N; ++i) Y[i*INCY] += ALPHA*X[i*INCX];
 }
-
+//auto-vectorized
 void scal_cpu(int N, float ALPHA, float *X, int INCX)
 {
     int i;
     for(i = 0; i < N; ++i) X[i*INCX] *= ALPHA;
 }
-
+//autovectorized
 void fill_cpu(int N, float ALPHA, float *X, int INCX)
 {
     int i;
-    for(i = 0; i < N; ++i) X[i*INCX] = ALPHA;
+    #pragma clang loop vectorize(enable) interleave(enable)
+    for(i = 0; i < N; ++i) X[i*INCX] = ALPHA; // strided store 
 }
 
 void deinter_cpu(int NX, float *X, int NY, float *Y, int B, float *OUT)
@@ -208,7 +241,7 @@ void deinter_cpu(int NX, float *X, int NY, float *Y, int B, float *OUT)
         }
     }
 }
-
+//autovectorized
 void inter_cpu(int NX, float *X, int NY, float *Y, int B, float *OUT)
 {
     int i, j;
@@ -222,13 +255,14 @@ void inter_cpu(int NX, float *X, int NY, float *Y, int B, float *OUT)
         }
     }
 }
-
+//auto vectorized
 void copy_cpu(int N, float *X, int INCX, float *Y, int INCY)
 {
     int i;
-    for(i = 0; i < N; ++i) Y[i*INCY] = X[i*INCX];
+   #pragma clang loop vectorize(enable) interleave(enable)
+    for(i = 0; i < N; ++i) Y[i*INCY] = X[i*INCX];  // strided store  
 }
-
+//autovectorized
 void mult_add_into_cpu(int N, float *X, float *Y, float *Z)
 {
     int i;
