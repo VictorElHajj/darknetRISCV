@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <pthread.h>
-#define NNPACK 1
+//#define NNPACK 1
 #ifdef NNPACK
 #include <init.h>
 //#include <nnpack.h>

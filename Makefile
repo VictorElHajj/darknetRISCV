@@ -17,7 +17,7 @@ ARCH= -gencode arch=compute_30,code=sm_30 \
 VPATH=./src/:./examples
 SLIB=libdarknet.so
 ALIB=libdarknet.a
-EXEC=darknetnnpack0.8NNPACKtry
+EXEC=darknetgemm
 OBJDIR=./obj/
 
 #CC=gcc
@@ -42,7 +42,7 @@ COMMON= -Iinclude/ -Isrc/
 #CFLAGS= --target=riscv64-redhat-linux -static  -Wall -Wno-unused-result -Wno-unknown-pragmas -Wfatal-errors -fPIC -mepi -O2   -v -fno-vectorize 
 #CFLAGS= --target=riscv64-unknown-linux-gnu   -march=rv64g  -static -Wall -Wno-unused-result -Wno-unknown-pragmas -Wfatal-errors -fPIC -mepi -O3  -v -fno-vectorize -I ../../NNPACK-riscv/include/ -I ../../NNPACK-riscv/deps/pthreadpool/include/  
 #CFLAGS= --target=riscv64-unknown-linux-gnu -march=rv64g -O2   -static -fsave-optimization-record -DUSE_RISCV_VECTOR -Wall -Wno-unused-result -Wno-unknown-pragmas -Wfatal-errors -fPIC -mepi   -v -fno-vectorize -fno-slp-vectorize  -mllvm -no-epi-remove-redundant-vsetvl 
-CFLAGS= --target=riscv64-unknown-linux-gnu -march=rv64g -O3 -static   -fsave-optimization-record -DUSE_RISCV_VECTOR -Wall -Wno-unused-result -Wno-unknown-pragmas -Wfatal-errors -fPIC -mepi   -v -fno-vectorize -fno-slp-vectorize  -I ~/newdir/
+CFLAGS= --target=riscv64-unknown-linux-gnu -march=rv64g -O3 -static   -fsave-optimization-record -DUSE_RISCV_VECTOR -Wall -Wno-unused-result -Wno-unknown-pragmas -Wfatal-errors -fPIC -mepi   -v -fno-vectorize -fno-slp-vectorize  
 #../NNPACK-riscv/include/ -I ../NNPACK-riscv/deps/pthreadpool/include/  
 #CFLAGS= --target=riscv64-redhat-linux -Wall -Wno-unused-result -Wno-unknown-pragmas -Wfatal-errors -fPIC -mepi -O2  -v  -mllvm -no-epi-remove-redundant-vsetvl -I /root/vehave-src-seq/include/vehave-user -I /root/llvm_riscv64_native/lib
 
@@ -101,8 +101,8 @@ all: obj backup results  $(ALIB) $(EXEC)
 
 
 $(EXEC): $(EXECOBJ) $(ALIB)
-#	$(CC)  $(CFLAGS) $(COMMON) $^ -o $@ $(LDFLAGS) $(ALIB)
-	$(CC)  $(CFLAGS) $(COMMON) $^ ../NNPACKRISCV/lib.a -o $@ $(LDFLAGS) $(ALIB)
+	$(CC)  $(CFLAGS) $(COMMON) $^ -o $@ $(LDFLAGS) $(ALIB)
+#	$(CC)  $(CFLAGS) $(COMMON) $^ ../NNPACKRISCV/lib.a -o $@ $(LDFLAGS) $(ALIB)
 
 $(ALIB): $(OBJS)
 	$(AR) $(ARFLAGS) $@ $^

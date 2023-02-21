@@ -257,14 +257,6 @@ void gemm_nn_noalpha_unroll163loops(int M, int N, int K, float ALPHA,
         vc14= __builtin_epi_vload_2xf32(&C[(i+14)*ldc+j], gvl);
         vc15= __builtin_epi_vload_2xf32(&C[(i+15)*ldc+j], gvl);
         //
-   //    vc16= __builtin_epi_vload_2xf32(&C[(i+16)*ldc+j], gvl);
-   //     vc17= __builtin_epi_vload_2xf32(&C[(i+17)*ldc+j], gvl);
-   //     vc18= __builtin_epi_vload_2xf32(&C[(i+18)*ldc+j], gvl);
-   //     vc19= __builtin_epi_vload_2xf32(&C[(i+19)*ldc+j], gvl);
-   //     vc20= __builtin_epi_vload_2xf32(&C[(i+20)*ldc+j], gvl);
-   //     vc21= __builtin_epi_vload_2xf32(&C[(i+21)*ldc+j], gvl);
-   //     vc22= __builtin_epi_vload_2xf32(&C[(i+22)*ldc+j], gvl);
-   //     vc23= __builtin_epi_vload_2xf32(&C[(i+23)*ldc+j], gvl);
 	
         for ( k = 0; k < K; k ++) {
                 __epi_2xf32 vb = __builtin_epi_vload_2xf32(&B[k*ldb+j], gvl);
@@ -302,30 +294,6 @@ void gemm_nn_noalpha_unroll163loops(int M, int N, int K, float ALPHA,
 		__epi_2xf32 vaalpha15 = __builtin_epi_vfmv_v_f_2xf32(A[(i+15)*lda+k], gvl); // ALPHA*A
                   vc15 = __builtin_epi_vfmacc_2xf32(vc15, vaalpha15, vb, gvl); // sum += ALPHA*A*B
                   //-----
-//               __epi_2xf32 vaalpha16 = __builtin_epi_vfmv_v_f_2xf32(A[(i+16)*lda+k], gvl); // ALPHA*A
-  //                vc16 = __builtin_epi_vfmacc_2xf32(vc16, vaalpha16, vb, gvl); // sum += ALPHA*A*B
-//
-  ////             __epi_2xf32 vaalpha17 = __builtin_epi_vfmv_v_f_2xf32(A[(i+17)*lda+k], gvl); // ALPHA*A
-      //            vc17 = __builtin_epi_vfmacc_2xf32(vc17, vaalpha17, vb, gvl); // sum += ALPHA*A*B
-
-
-        //       __epi_2xf32 vaalpha18 = __builtin_epi_vfmv_v_f_2xf32(A[(i+18)*lda+k], gvl); // ALPHA*A
-          //        vc18 = __builtin_epi_vfmacc_2xf32(vc18, vaalpha18, vb, gvl); // sum += ALPHA*A*B
-
-       //        __epi_2xf32 vaalpha19 = __builtin_epi_vfmv_v_f_2xf32(A[(i+19)*lda+k], gvl); // ALPHA*A
-       //           vc19 = __builtin_epi_vfmacc_2xf32(vc19, vaalpha19, vb, gvl); // sum += ALPHA*A*B
-
-       //        __epi_2xf32 vaalpha20 = __builtin_epi_vfmv_v_f_2xf32(A[(i+20)*lda+k], gvl); // ALPHA*A
-       //           vc20 = __builtin_epi_vfmacc_2xf32(vc20, vaalpha20, vb, gvl); // sum += ALPHA*A*B
-
-        //       __epi_2xf32 vaalpha21 = __builtin_epi_vfmv_v_f_2xf32(A[(i+21)*lda+k], gvl); // ALPHA*A
-        //          vc21 = __builtin_epi_vfmacc_2xf32(vc21, vaalpha21, vb, gvl); // sum += ALPHA*A*B
-
-         //      __epi_2xf32 vaalpha22 = __builtin_epi_vfmv_v_f_2xf32(A[(i+22)*lda+k], gvl); // ALPHA*A
-         //         vc22 = __builtin_epi_vfmacc_2xf32(vc22, vaalpha22, vb, gvl); // sum += ALPHA*A*B
-
-          //     __epi_2xf32 vaalpha23 = __builtin_epi_vfmv_v_f_2xf32( A[(i+23)*lda+k], gvl); // ALPHA*A
-          //        vc23 = __builtin_epi_vfmacc_2xf32(vc23, vaalpha23, vb, gvl); // sum += ALPHA*A*B
         
 	}
                 __builtin_epi_vstore_2xf32(&C[i*ldc+j], vc, gvl);
@@ -345,16 +313,6 @@ void gemm_nn_noalpha_unroll163loops(int M, int N, int K, float ALPHA,
                 __builtin_epi_vstore_2xf32(&C[(i+14)*ldc+j], vc14, gvl);
                 __builtin_epi_vstore_2xf32(&C[(i+15)*ldc+j], vc15, gvl);
                 //
-             //   __builtin_epi_vstore_2xf32(&C[(i+16)*ldc+j], vc16, gvl);
-             //   __builtin_epi_vstore_2xf32(&C[(i+17)*ldc+j], vc17, gvl);
-             //   __builtin_epi_vstore_2xf32(&C[(i+18)*ldc+j], vc18, gvl);
-            //    __builtin_epi_vstore_2xf32(&C[(i+19)*ldc+j], vc19, gvl);
-            //    __builtin_epi_vstore_2xf32(&C[(i+20)*ldc+j], vc20, gvl);
-            //    __builtin_epi_vstore_2xf32(&C[(i+21)*ldc+j], vc21, gvl);
-            //    __builtin_epi_vstore_2xf32(&C[(i+22)*ldc+j], vc22, gvl);
-            //    __builtin_epi_vstore_2xf32(&C[(i+23)*ldc+j], vc23, gvl);
-	
-
         }
     j += gvl;
      }}
@@ -3796,17 +3754,12 @@ void gemm_cpu(int TA, int TB, int M, int N, int K, float ALPHA,
     if(!TA && !TB)
     {
 
+
+	    /*** enable below for the 6-loops packed implementations*/
 /*	float *transposeB, *transposeA;
         int blockM = ((16 >M)?M:(16)) ;
-        //int blockM = ((32 >M)?M:(32)) ;
-       // int blockM = ((64 >M)?M:(64)) ;
-       // int blockM = ((256 >M)?M:(256)) ;
         int blockN  =((512>N)?N:(512));
-        //int blockN  =((1024>N)?N:(1024));
-     //   int blockN  =((2048>N)?N:(2048));
-       //int blockN = ((4096>K)?K:(4096));
         int blockK = ((128>K)?K:(128));
-        //int blockK = ((1024>K)?K:(1024));
         transposeB= (float *)malloc(blockM*blockN*blockK*sizeof(float));
         transposeA= (float *)malloc(blockM*blockN*blockK*sizeof(float));
 
@@ -3831,6 +3784,9 @@ void gemm_cpu(int TA, int TB, int M, int N, int K, float ALPHA,
                 transposeA = NULL;
         }
 */
+
+
+	   /*** 3-loop implementation */
 	gemm_nn_noalpha_unroll163loops(M, N, K, ALPHA,A,lda, B, ldb,C,ldc);
 	
     }

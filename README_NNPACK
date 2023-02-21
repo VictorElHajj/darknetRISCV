@@ -3,7 +3,7 @@ Dowaload darknetRISCVV repository.
 Note: It is necessary to first build NNPACKRISCV and create the static library
 cd darknetRISCVV
 Step 1: Please enable the macro by uncommenting
-#define NNPACK 1
+#define NNPACK 1  [enable the macro]
 from include/darknet.h
 
 Step 2: Use Makefile_NNPACK from makefiles folder to compile the software with winograd implementation support. 
