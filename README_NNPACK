@@ -1,0 +1,10 @@
+Dowaload darknetRISCVV repository. 
+
+cd darknetRISCVV
+Change the path for the compiler if necessary
+Change the path for the lib.a (NNPACK) if necessary
+make
+
+
+
+Execution: This executable has been tested upto 8192-bit vector lengths. Beyond 4096-bit, the utilization of full vector length for tuple mutiplication is limiting due to block sizes. 
