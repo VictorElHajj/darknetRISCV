@@ -1,38 +1,37 @@
-The convolutional layer can be implemented with different algorithms like im2col+gemm, Winograd, fft, and direct. We are providing the implementations for m2col+gemm and Winograd for the convolutional layer. 
+The convolutional layer can be implemented with different algorithms like im2col+gemm, Winograd, fft, and direct. We are providing the optimized implementations for im2col+gemm and Winograd for the convolutional layer. 
 
-
+ 
 To run with im2col+gemm implementations:
+    Download: 
+        git clone https://github.com/soniab/darknetRISCVV.git
 
-im2col+gemm implementation is a part of the darknet repository and does not require any additional linking.
-For this we need to disable the macro of NNPACK from include/darknet.h - comment out #define NNPACK 1
-To compile the im2col+gemm implementation, use Makefile_gemm from the makefiles folder.
-cp ./makefiles/Makefile_gemm .
-Rename Makefile_gemm to Makefile
-then use the 'make' command to compile the codes.
-
-To run the command on SPIKE please use
+    Compilation:
+        im2col+gemm implementation is a part of the darknet repository and does not require any additional linking. 
+        Enter the repository by using `cd darknetRISCVV`
+        To compile the im2col+gemm implementation, use Makefile_gemm. 
+        NNPACK is already set as 0 in the Makefile_gemm. 
+        For compilation use the 'make -f Makefile_gemm' command. 
+    Run:
+        To exexute the binary on A64fx with YOLOV3 network model, use the following command
+            './binary detect cfg/yolov3.cfg yolov3.weights data/dog.jpg'
 
 
 
 To run with Winograd implementation:
-First, make sure to download NNPACKRISCV and build it. Please follow the instructions from README_RISCVV inside the NNPACKRISCV repository to build Winograd implementation for RISC-V Vector architecture.
+    Download:
+        git clone https://github.com/soniab/darknetRISCVV.git
 
-Note: It is necessary to first build NNPACKRISCV and create the static library 'lib.a' inside the NNPACKRISCV repository. 
-
-cd darknetRISCVV
-Step 1: Please enable the macro by uncommenting
-#define NNPACK 1  [enable the macro] from include/darknet.h
-
-Step 2: Use Makefile_NNPACK from the makefiles folder to compile the software with Winograd implementation support. Please use 'cp ./makefiles/MAkefile_NNPACK .'  and then Rename Makefile_NNPACK to Makefile using 'mv Makefile_NNPACK Makefile' 
-Step 3: Change the compiler Path and Library linking path (NNPACKRISCV/lib.a) in the Makefile if necessary. 
-Step 4: Please use the "make" command to compile the software. 
-Step 5: This will create the static binary file.  
-
-
-Execution: 
-This executable has been tested with GEM5 and SPIKE. 
-With SPIKE: The generated file has been tested with vector lengths from 512-bit to 4096-bit. 
-With Gem5: The generated binary file has been tested with 512-bit to 16384-bit. 
+    Compilation:
+        Before compiling darknet repository, make sure to download NNPACK and build. Follow the instructions from README_RISCVV from "https://github.com/soniab/NNPACKRISCV.git" repository to download and compile the NNPACK for RISC-V Vector achitecture. Note: Please note that it is necessary to first build NNPACK for RISC-V Vector architecture because it is important to link 'NNPACKRISCV/lib.a' to call the kernels for the Winograd implementation.  
+    
+        Compilation of Daknet with NNPACK:
+            Enter the repository by using `cd darknetRISCVV`
+            To compile the Winograd implementation, use Makefile_NNPACK. 
+            NNPACK is already set as 1 in the Makefile_NNPACK. 
+            For compilation use the 'make -f Makefile_NNPACK' command.  
+    Run:
+        To run the binary on A64fx use following command:
+            './binary detect cfg/yolov3.cfg yolov3.weights data/dog.jpg'
 
 
 
