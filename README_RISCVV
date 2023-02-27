@@ -12,8 +12,8 @@ To run with im2col+gemm implementations:
         NNPACK is already set as 0 in the Makefile_gemm. 
         For compilation use the 'make -f Makefile_gemm' command. 
     Run:
-        To exexute the binary on A64fx with YOLOV3 network model, use the following command
-            './binary detect cfg/yolov3.cfg yolov3.weights data/dog.jpg'
+        To exexute the binary with SPIKE with YOLOV3 network model, use the following command
+            ~/local/riscvv08/spike/bin/spike --isa=rv64gcv_zfh --varch=vlen:4096,elen:64,slen:4096 ~/local/riscvv08/pk/riscv64-unknown-elf/bin/pk -s './binary detect cfg/yolov3.cfg yolov3.weights data/dog.jpg'
 
 
 
@@ -30,8 +30,8 @@ To run with Winograd implementation:
             NNPACK is already set as 1 in the Makefile_NNPACK. 
             For compilation use the 'make -f Makefile_NNPACK' command.  
     Run:
-        To run the binary on A64fx use following command:
-            './binary detect cfg/yolov3.cfg yolov3.weights data/dog.jpg'
+        To exexute the binary with SPIKE with YOLOV3 network model, use the following command
+            ~/local/riscvv08/spike/bin/spike --isa=rv64gcv_zfh --varch=vlen:4096,elen:64,slen:4096 ~/local/riscvv08/pk/riscv64-unknown-elf/bin/pk -s './binary detect cfg/yolov3.cfg yolov3.weights data/dog.jpg'
 
 
 
