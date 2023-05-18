@@ -495,6 +495,12 @@ int main(int argc, char **argv)
         mkimg(argv[2], argv[3], atoi(argv[4]), atoi(argv[5]), atoi(argv[6]), argv[7]);
     } else if (0 == strcmp(argv[1], "imtest")){
         test_resize(argv[2]);
+    } else if (0 == strcmp(argv[1], "bench_yolo-tiny")){
+        float thresh = .5;
+        char *filename = "data/giraffe.jpg";
+        char *outfile = 0;
+        int fullscreen = 0;
+        test_detector("cfg/coco.data", "cfg/yolov3-tiny.cfg", "yolov3-tiny.weights", filename, thresh, .5, outfile, fullscreen);
     } else {
         fprintf(stderr, "Not an option: %s\n", argv[1]);
     }

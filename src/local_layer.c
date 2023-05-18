@@ -101,8 +101,8 @@ void forward_local_layer(const local_layer l, network net)
 
     for(i = 0; i < l.batch; ++i){
         float *input = net.input + i*l.w*l.h*l.c;
-        im2col_cpu(input, l.c, l.h, l.w, 
-                l.size, l.stride, l.pad, net.workspace);
+        im2col_cpu(input, net.workspace, l.c, l.h, l.w, 
+                l.size, l.stride, l.pad);
         float *output = l.output + i*l.outputs;
         for(j = 0; j < locations; ++j){
             float *a = l.weights + j*l.size*l.size*l.c*l.n;
@@ -132,8 +132,8 @@ void backward_local_layer(local_layer l, network net)
 
     for(i = 0; i < l.batch; ++i){
         float *input = net.input + i*l.w*l.h*l.c;
-        im2col_cpu(input, l.c, l.h, l.w, 
-                l.size, l.stride, l.pad, net.workspace);
+        im2col_cpu(input, net.workspace, l.c, l.h, l.w, 
+                l.size, l.stride, l.pad);
 
         for(j = 0; j < locations; ++j){ 
             float *a = l.delta + i*l.outputs + j;

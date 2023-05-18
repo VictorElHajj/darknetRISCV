@@ -1,5 +1,6 @@
 #ifndef IM2COL_H
 #define IM2COL_H
+#include <stdlib.h>
 
 void im2col_cpu(float* data_im, float* data_col,
         int channels, int height, int width,

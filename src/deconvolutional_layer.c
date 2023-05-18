@@ -269,8 +269,9 @@ void backward_deconvolutional_layer(layer l, network net)
         float *b = net.workspace;
         float *c = l.weight_updates;
 
-        im2col_cpu(l.delta + i*l.outputs, l.out_c, l.out_h, l.out_w, 
-                l.size, l.stride, l.pad, b);
+        im2col_cpu(l.delta + i*l.outputs, b, l.out_c, l.out_h, l.out_w,
+        l.size, l.stride, l.pad);
+
         gemm_cpu(0,1,m,n,k,1,a,k,b,k,1,c,n);
 
         if(net.delta){
